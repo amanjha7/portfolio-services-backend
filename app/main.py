@@ -2,6 +2,7 @@ from flask import Flask
 from config import Config
 from app.extensions import db, ma
 from app.routes import api
+from flask_cors import CORS
 
 def create_app():
     app = Flask(__name__)
@@ -9,6 +10,7 @@ def create_app():
 
     db.init_app(app)
     ma.init_app(app)
+    CORS(app)  # Enable CORS for all routes
 
     app.register_blueprint(api, url_prefix='/api')
 
