@@ -1,21 +1,22 @@
 from flask import Flask
-from config import Config
-from app.extensions import db, ma
-from app.routes import api
-from app.extensions import mongo
 from flask_cors import CORS
+from app.extensions import mongo
+from app.routes import api
 
 def create_app():
     app = Flask(__name__)
-    # app.config.from_object(Config)
 
-    app.config["MONGO_URI"] = "mongodb://localhost:27017/mymodernportfolio"
+    # ── Make sure the URI names a database:
+    app.config["MONGO_URI"] = (
+        "mongodb+srv://aman:aman"
+        "@mediaplayercluster.ggsfnxd.mongodb.net/"
+        "myportfolio"
+        "?retryWrites=true&w=majority&appName=mediaPlayerCluster"
+    )
+
+    # This binds mongo.db → your database
     mongo.init_app(app)
 
-    # db.init_app(app)
-    # ma.init_app(app)
-    CORS(app)  # Enable CORS for all routes
-
-    app.register_blueprint(api, url_prefix='/api')
-
+    CORS(app)
+    app.register_blueprint(api, url_prefix="/api")
     return app
