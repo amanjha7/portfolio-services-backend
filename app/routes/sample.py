@@ -10,6 +10,11 @@ from flask_mail import Message
 from flask import current_app
 from app.extensions import mail
 
+import requests
+import os
+
+RECAPTCHA_SECRET_KEY = "6Ldp00IrAAAAANpbVge59XDi83eleT7HaKbmaUYI"
+
 
 @api.route('/ping', methods=['GET'])
 def ping():
@@ -20,10 +25,27 @@ def ping():
 def send_email():
     try:
         data = request.get_json()
+        captcha_response = data.get('recaptcha')
+
+                # Verify captcha with Google
+        verify_url = 'https://www.google.com/recaptcha/api/siteverify'
+        payload = {
+            'secret': RECAPTCHA_SECRET_KEY,
+            'response': captcha_response
+        }
+        captcha_verify = requests.post(verify_url, data=payload)
+        captcha_result = captcha_verify.json()
+
+        if not captcha_result.get('success'):
+            return jsonify({'error': 'Invalid CAPTCHA'}), 400
+
         if not data:
             return jsonify({'status': 'error', 'message': 'Missing JSON data'}), 400
+        
+        ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
 
         schema = ContactMessageSchema()
+        data.pop('recaptcha', None)
         validated_data = schema.load(data)
 
         validated_data['created_at'] = datetime.utcnow()
@@ -39,7 +61,7 @@ def send_email():
         msg = Message(
             subject='Contact from portfolio',
             recipients=['amanjhavdjs12tha@gmail.com','amanjha8503@gmail.com'],
-            body=f"Name: {name}\nEmail: {email}\n\nMessage: {message}"
+            body=f"Name: {name}\nEmail: {email}\n\nMessage: {message}\n \nIP Address: {ip_address}",
         )
 
         mail.send(msg)
