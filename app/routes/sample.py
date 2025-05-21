@@ -6,6 +6,10 @@ from app.extensions import mongo
 from marshmallow import ValidationError
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
+from flask_mail import Message
+from flask import current_app
+from app.extensions import mail
+
 
 @api.route('/ping', methods=['GET'])
 def ping():
@@ -19,25 +23,33 @@ def send_email():
         if not data:
             return jsonify({'status': 'error', 'message': 'Missing JSON data'}), 400
 
-        # Use schema to validate and deserialize data
         schema = ContactMessageSchema()
         validated_data = schema.load(data)
 
-        # Add a created_at field if it's not present
         validated_data['created_at'] = datetime.utcnow()
 
-        # Insert the validated data into MongoDB (will auto-create collection)
+        name = validated_data.get('name')
+        email = validated_data.get('email')
+        message = validated_data.get('message')
+
+        # Save to DB
         result = mongo.db.contact_messages.insert_one(validated_data)
 
-        if result.inserted_id:
-            return jsonify({'status': 'success', 'message': 'Email received'}), 200
-        else:
-            return jsonify({'status': 'error', 'message': 'Insertion failed'}), 500
+        # Compose the email
+        msg = Message(
+            subject='Contact from portfolio',
+            recipients=['amanjhavdjs12tha@gmail.com'],
+            body=f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}"
+        )
+
+        mail.send(msg)
+
+        return jsonify({'status': 'success', 'message': 'Email sent and saved'}), 200
 
     except ValidationError as ve:
         return jsonify({'status': 'error', 'errors': ve.messages}), 400
     except Exception as e:
-        print("Error while saving message:", str(e))
+        current_app.logger.error("Error while sending email: %s", str(e))
         return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
 
 
