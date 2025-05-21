@@ -38,7 +38,7 @@ def send_email():
         # Compose the email
         msg = Message(
             subject='Contact from portfolio',
-            recipients=['amanjhavdjs12tha@gmail.com'],
+            recipients=['amanjhavdjs12tha@gmail.com','amanjha8503@gmail.com'],
             body=f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}"
         )
 
